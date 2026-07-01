@@ -1,0 +1,148 @@
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <UniversalTelegramBot.h>
+#include <ArduinoJson.h>
+
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// WiFi
+const char* ssid = "ACT-ai_107796722953";
+const char* password = "80319214";
+
+// Telegram
+#define BOT_TOKEN "8206393450:AAHcbpgKVh5HJciGjqX5XSk9GQhuPsHtwu8"
+#define CHAT_ID "7151419982"
+
+WiFiClientSecure client;
+UniversalTelegramBot bot(BOT_TOKEN, client);
+
+// Pins
+const int trackPin1 = 18;
+const int trackPin2 = 19;
+const int trackPin3 = 23;
+
+const int led = 2;
+const int buzzer = 15;
+
+bool sent1 = false;
+bool sent2 = false;
+bool sent3 = false;
+
+void setup() {
+
+  Serial.begin(115200);
+
+  pinMode(trackPin1, INPUT_PULLUP);
+  pinMode(trackPin2, INPUT_PULLUP);
+  pinMode(trackPin3, INPUT_PULLUP);
+
+  pinMode(led, OUTPUT);
+  pinMode(buzzer, OUTPUT);
+
+  lcd.init();
+  lcd.backlight();
+
+  lcd.setCursor(0,0);
+  lcd.print("Connecting");
+  lcd.setCursor(0,1);
+  lcd.print("WiFi...");
+
+  WiFi.begin(ssid, password);
+
+  while(WiFi.status()!=WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+
+  client.setInsecure();
+
+  Serial.println("WiFi Connected");
+
+  lcd.clear();
+  lcd.print("WiFi Connected");
+  delay(2000);
+  lcd.clear();
+}
+
+void loop() {
+
+  bool f1 = digitalRead(trackPin1);
+  bool f2 = digitalRead(trackPin2);
+  bool f3 = digitalRead(trackPin3);
+
+  lcd.clear();
+
+  if(!f1 && !f2 && !f3)
+  {
+    lcd.setCursor(0,0);
+    lcd.print("All Tracks");
+    lcd.setCursor(0,1);
+    lcd.print("Are Safe");
+
+    digitalWrite(led,LOW);
+    digitalWrite(buzzer,LOW);
+
+    sent1=false;
+    sent2=false;
+    sent3=false;
+
+    Serial.println("All Tracks Safe");
+  }
+
+  else
+  {
+    lcd.setCursor(0,0);
+    lcd.print("FAULT DETECTED");
+
+    digitalWrite(led,HIGH);
+    digitalWrite(buzzer,HIGH);
+
+    if(f1)
+    {
+      lcd.setCursor(0,1);
+      lcd.print("Track 1 Fault");
+
+      if(!sent1)
+      {
+        bot.sendMessage(CHAT_ID,
+        "🚨 Railway Track Alert\n\n⚠️ Track 1 Fault Detected\n\nPlease Inspect Immediately.","");
+
+        sent1=true;
+      }
+    }
+
+    else if(f2)
+    {
+      lcd.setCursor(0,1);
+      lcd.print("Track 2 Fault");
+
+      if(!sent2)
+      {
+        bot.sendMessage(CHAT_ID,
+        "🚨 Railway Track Alert\n\n⚠️ Track 2 Fault Detected\n\nPlease Inspect Immediately.","");
+
+        sent2=true;
+      }
+    }
+
+    else if(f3)
+    {
+      lcd.setCursor(0,1);
+      lcd.print("Track 3 Fault");
+
+      if(!sent3)
+      {
+        bot.sendMessage(CHAT_ID,
+        "🚨 Railway Track Alert\n\n⚠️ Track 3 Fault Detected\n\nPlease Inspect Immediately.","");
+
+        sent3=true;
+      }
+    }
+  }
+
+  delay(500);
+}
